@@ -1,4 +1,4 @@
-package com.example.runebotconnect;
+package com.example.runeconnect;
 
 import javax.inject.Inject;
 
@@ -46,7 +46,7 @@ import okhttp3.Response;
         description = "Sends clan chat, coffer transactions, and rank icons to your clan's RuneBot Discord integration.",
         tags = {"discord", "chat", "clan", "coffer"}
 )
-public class RuneBotConnectPlugin extends Plugin
+public class RuneConnectPlugin extends Plugin
 {
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static final long REQUEST_TIMEOUT_SECONDS = 10;
@@ -91,7 +91,7 @@ public class RuneBotConnectPlugin extends Plugin
     }
 
     @Inject
-    private RuneBotConnectConfig config;
+    private RuneConnectConfig config;
 
     @Inject
     private DrawManager drawManager;
@@ -103,21 +103,21 @@ public class RuneBotConnectPlugin extends Plugin
     private ChatIconManager chatIconManager;
 
     @Provides
-    RuneBotConnectConfig provideConfig(ConfigManager configManager)
+    RuneConnectConfig provideConfig(ConfigManager configManager)
     {
-        return configManager.getConfig(RuneBotConnectConfig.class);
+        return configManager.getConfig(RuneConnectConfig.class);
     }
 
     @Override
     protected void startUp()
     {
-        log.info("RuneBot Connect started");
+        log.info("RuneConnect started");
     }
 
     @Override
     protected void shutDown()
     {
-        log.info("RuneBot Connect stopped");
+        log.info("RuneConnect stopped");
     }
 
     @Subscribe

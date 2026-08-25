@@ -1,11 +1,11 @@
-package com.example.runebotconnect;
+package com.example.runeconnect;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("runebotconnect")
-public interface RuneBotConnectConfig extends Config
+@ConfigGroup("runeconnect")
+public interface RuneConnectConfig extends Config
 {
     @ConfigItem(
             keyName = "linkToken",

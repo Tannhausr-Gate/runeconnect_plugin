@@ -7,7 +7,7 @@ public class ExamplePluginTest
 {
     public static void main(String[] args) throws Exception
     {
-        ExternalPluginManager.loadBuiltin(com.example.runebotconnect.RuneBotConnectPlugin.class);
+        ExternalPluginManager.loadBuiltin(com.example.runeconnect.RuneBotConnectPlugin.class);
         RuneLite.main(args);
     }
 }
