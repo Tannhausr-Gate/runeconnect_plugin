@@ -24,33 +24,38 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 @Slf4j
 @PluginDescriptor(
-        name = "RuneBot Connect",
+        name = "RuneConnect",
         description = "Sends clan chat, coffer transactions, and rank icons to your clan's RuneBot Discord integration.",
         tags = {"discord", "chat", "clan", "coffer"}
 )
 public class RuneBotConnectPlugin extends Plugin
 {
-    private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private static final long REQUEST_TIMEOUT_SECONDS = 10;
 
     @Inject
     private Gson gson;
+
+    @Inject
+    private OkHttpClient okHttpClient;
 
     private static final class ChatBroadcastItem
     {
@@ -262,8 +267,6 @@ public class RuneBotConnectPlugin extends Plugin
         });
     }
 
-    private static final String MULTIPART_BOUNDARY = "----RuneBotConnectBoundary" + UUID.randomUUID();
-
     private void sendCofferTransaction(String type, long amount, String memberName, byte[] imageBytes)
     {
         String linkToken = config.linkToken();
@@ -282,53 +285,37 @@ public class RuneBotConnectPlugin extends Plugin
         String json = gson.toJson(payload);
 
         String url = SERVER_URL + "/runelite/coffer";
-        HttpRequest request = imageBytes != null
+        Request request = imageBytes != null
                 ? buildMultipartRequest(url, linkToken, json, imageBytes)
                 : buildJsonRequest(url, linkToken, json);
 
-        HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> log.debug("Coffer transaction responded: {}", response.statusCode()))
-                .exceptionally(ex -> {
-                    log.debug("Failed to reach coffer transaction endpoint", ex);
-                    return null;
-                });
+        sendAsync(request, "Coffer transaction");
     }
 
-    private HttpRequest buildJsonRequest(String url, String linkToken, String json)
+    private Request buildJsonRequest(String url, String linkToken, String json)
     {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
+        RequestBody body = RequestBody.create(JSON, json);
+
+        return new Request.Builder()
+                .url(url)
                 .header("x-runebot-runelite-token", linkToken)
-                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .post(body)
                 .build();
     }
 
-    private HttpRequest buildMultipartRequest(String url, String linkToken, String json, byte[] imageBytes)
+    private Request buildMultipartRequest(String url, String linkToken, String json, byte[] imageBytes)
     {
+        MultipartBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("payload_json", null, RequestBody.create(JSON, json))
+                .addFormDataPart("file", "screenshot.png",
+                        RequestBody.create(MediaType.parse("image/png"), imageBytes))
+                .build();
 
-        List<byte[]> parts = new ArrayList<>();
-
-        parts.add((
-                "--" + MULTIPART_BOUNDARY + "\r\n"
-                        + "Content-Disposition: form-data; name=\"payload_json\"\r\n\r\n"
-        ).getBytes(StandardCharsets.UTF_8));
-        parts.add(json.getBytes(StandardCharsets.UTF_8));
-        parts.add((
-                "\r\n--" + MULTIPART_BOUNDARY + "\r\n"
-                        + "Content-Disposition: form-data; name=\"file\"; filename=\"screenshot.png\"\r\n"
-                        + "Content-Type: image/png\r\n\r\n"
-        ).getBytes(StandardCharsets.UTF_8));
-        parts.add(imageBytes);
-        parts.add(("\r\n--" + MULTIPART_BOUNDARY + "--\r\n").getBytes(StandardCharsets.UTF_8));
-
-        return HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "multipart/form-data; boundary=" + MULTIPART_BOUNDARY)
+        return new Request.Builder()
+                .url(url)
                 .header("x-runebot-runelite-token", linkToken)
-                .POST(HttpRequest.BodyPublishers.ofByteArrays(parts))
+                .post(body)
                 .build();
     }
 
@@ -343,19 +330,37 @@ public class RuneBotConnectPlugin extends Plugin
             return;
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(SERVER_URL + path))
-                .timeout(REQUEST_TIMEOUT)
-                .header("Content-Type", "application/json")
+        RequestBody body = RequestBody.create(JSON, json);
+
+        Request request = new Request.Builder()
+                .url(SERVER_URL + path)
                 .header("x-runebot-runelite-token", linkToken)
-                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .post(body)
                 .build();
 
-        HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(response -> log.debug("{} responded: {}", label, response.statusCode()))
-                .exceptionally(ex -> {
-                    log.debug("Failed to reach {} endpoint", label.toLowerCase(), ex);
-                    return null;
+        sendAsync(request, label);
+    }
+
+    private void sendAsync(Request request, String label)
+    {
+        okHttpClient.newBuilder()
+                .callTimeout(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
+                .newCall(request)
+                .enqueue(new Callback()
+                {
+                    @Override
+                    public void onResponse(Call call, Response response)
+                    {
+                        log.debug("{} responded: {}", label, response.code());
+                        response.close();
+                    }
+
+                    @Override
+                    public void onFailure(Call call, IOException e)
+                    {
+                        log.debug("Failed to reach {} endpoint", label.toLowerCase(), e);
+                    }
                 });
     }
 }

@@ -10,7 +10,7 @@ public interface RuneBotConnectConfig extends Config
     @ConfigItem(
             keyName = "linkToken",
             name = "Discord Link Token",
-            description = "The link token given to you by RuneBot or a clan leader."
+            description = "The link token given to you by the discord bot or a clan leader."
     )
     default String linkToken()
     {
