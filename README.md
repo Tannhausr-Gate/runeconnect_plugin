@@ -1,8 +1,8 @@
-# RuneBot Connect
+# RuneConnect
 
-Sends clan chat, coffer transactions, and rank icons to your clan's RuneBot Discord integration.
+Sends clan chat, coffer transactions, and rank icons to your clan's companion Discord app, RuneBot .
 
-* Talks only to RuneBot's own server; no third-party relay
+* Talks only to RuneConnect's own server; no third-party relay
 * No messages saved.
 
 ### Get In-Game Clan Chat in Your Discord
@@ -19,7 +19,7 @@ Messages sent to Discord display your clan rank icon next to your name making it
 
 ## Plugin Setup
 
-1. Search for **RuneBot Connect** in the RuneLite Plugin Hub and install it.
+1. Search for **RuneConnect** in the RuneLite Plugin Hub and install it.
 2. In your clan's Discord server, run `/setup runelite-link` (requires Manage Server permission) to get a link token.
    ![Getting Token From Bot](images/gettingTokenFromBot.png)
 3. Open this plugin's settings and paste the token into **Discord Link Token**.
@@ -33,4 +33,4 @@ Messages sent to Discord display your clan rank icon next to your name making it
 - **A screenshot of your RuneLite Client**, taken at the moment of each coffer transaction.
 - **Rank Icon Images**: A small icon per clan rank, sent once the first time it's encountered.
 
-No data is sent unless a valid Discord Link Token is configured. All data goes only to RuneBot's own server; this plugin does not communicate with any other third party.
+No data is sent unless a valid Discord Link Token is configured. All data goes only to RuneConnect's own server; this plugin does not communicate with any other third party.
