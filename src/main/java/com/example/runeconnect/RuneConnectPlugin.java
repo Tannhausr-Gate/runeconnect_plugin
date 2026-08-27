@@ -82,7 +82,7 @@ public class RuneConnectPlugin extends Plugin
             Pattern.CASE_INSENSITIVE
     );
 
-    // Toss out Ironman/HC/UIM status
+    // Tossing out Ironman/HC/UIM status
     private static final Pattern IMG_TAG_PATTERN = Pattern.compile("<img=\\d+>");
 
     private String stripImageTags(String text)
@@ -123,7 +123,8 @@ public class RuneConnectPlugin extends Plugin
     @Subscribe
     public void onChatMessage(ChatMessage event)
     {
-        // CLAN_CHAT is what members actually type. CLAN_MESSAGE is from clan system notifications
+        // CLAN_CHAT is what members actually type.
+        // CLAN_MESSAGE is from clan system notifications
         if (event.getType() == ChatMessageType.CLAN_CHAT)
         {
             handleClanChatMessage(event);
@@ -203,7 +204,7 @@ public class RuneConnectPlugin extends Plugin
 
     private void handleClanChatMessage(ChatMessage event)
     {
-        // Cleaned once, used for both the rank lookup and the outgoing payload.
+
         // ClanChannel.findMember() needs the plain name to match the roster.
         String senderName = stripImageTags(event.getName());
 
@@ -220,8 +221,6 @@ public class RuneConnectPlugin extends Plugin
                 ? Base64.getEncoder().encodeToString(rankInfo.iconPng)
                 : null;
 
-        // The endpoint expects a JSON array. This plugin only ever sends one message
-        // per call, but the batch shape is what the server parses.
         String json = gson.toJson(new ChatBroadcastItem[] { item });
 
         postToBot("/runelite/chat", json, "Chat broadcast");
@@ -233,7 +232,6 @@ public class RuneConnectPlugin extends Plugin
 
         if (!matcher.matches())
         {
-            // Other things come through as clan system messages too (joins, leaves, etc.).
             return;
         }
 
