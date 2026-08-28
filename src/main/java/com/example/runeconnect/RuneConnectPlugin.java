@@ -244,6 +244,16 @@ public class RuneConnectPlugin extends Plugin
                 ? 1
                 : Long.parseLong(rawAmount.replace(",", ""));
 
+        boolean isLocalPlayerTransaction = client.getLocalPlayer() != null
+                && memberName.equalsIgnoreCase(client.getLocalPlayer().getName());
+
+        if (!isLocalPlayerTransaction)
+        {
+            // ensuring only player who actually made the transaction has their screen captured.
+            sendCofferTransaction(type, amount, memberName, null);
+            return;
+        }
+
         drawManager.requestNextFrameListener(image ->
         {
             byte[] imageBytes = null;
